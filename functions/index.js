@@ -25,3 +25,26 @@ exports.getGeeks = functions.https.onRequest((request, response) => {
     })
     .catch(err => console.error(err))
 })
+
+exports.createGeeek = functions.https.onRequest((request, response) => {
+  if (request.method !== 'POST') {
+    return response.status(400).json({ error: 'this method is not valid' })
+  }
+  const newGeek = {
+    body: request.body.body,
+    userHandle: request.body.userHandle,
+    createdAt: admin.firestore.Timestamp.fromDate(new Date())
+  }
+
+  admin
+    .firestore()
+    .collection('geek')
+    .add(newGeek)
+    .then(doc => {
+      response.json({ message: `document ${doc.id} created succcessfully!!` })
+    })
+    .catch(err => {
+      response.status(500).json({ error: 'something went wrong' })
+      console.log(err)
+    })
+})
