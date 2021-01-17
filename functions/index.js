@@ -3,37 +3,34 @@ const admin = require('firebase-admin')
 
 admin.initializeApp()
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.helloWorld = functions.https.onRequest((request, response) => {
-  functions.logger.info('Hello logs!', { structuredData: true })
-  response.send('Hello world')
-})
+const express = require('express')
+const app = express()
 
-exports.getGeeks = functions.https.onRequest((request, response) => {
+app.get('/geeks', (request, response) => {
   admin
     .firestore()
     .collection('geek')
+    .orderBy('createdAt', 'desc')
     .get()
     .then(data => {
       const geeks = []
       data.forEach(doc => {
-        geeks.push(doc.data())
+        console.log('doc object', doc)
+        geeks.push({
+          geekId: doc.id,
+          ...doc.data()
+        })
       })
       return response.json(geeks)
     })
     .catch(err => console.error(err))
 })
 
-exports.createGeeek = functions.https.onRequest((request, response) => {
-  if (request.method !== 'POST') {
-    return response.status(400).json({ error: 'this method is not valid' })
-  }
+app.post('/geeks', (request, response) => {
   const newGeek = {
     body: request.body.body,
     userHandle: request.body.userHandle,
-    createdAt: admin.firestore.Timestamp.fromDate(new Date())
+    createdAt: new Date().toISOString()
   }
 
   admin
@@ -48,3 +45,4 @@ exports.createGeeek = functions.https.onRequest((request, response) => {
       console.log(err)
     })
 })
+exports.api = functions.https.onRequest(app)
