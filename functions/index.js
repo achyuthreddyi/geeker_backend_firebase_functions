@@ -1,6 +1,6 @@
 const functions = require('firebase-functions')
 const { getAllGeeks, createOneGeek } = require('./handlers/geeks')
-const { signUp, login } = require('./handlers/users')
+const { signUp, login, uploadImage } = require('./handlers/users')
 const FBAuth = require('./utils/fbAuth')
 
 const app = require('express')()
@@ -13,5 +13,6 @@ app.post('/login', login)
 
 app.get('/geeks', getAllGeeks)
 app.post('/geeks', FBAuth, createOneGeek)
+app.post('/user/image', FBAuth, uploadImage)
 
 exports.api = functions.https.onRequest(app)
