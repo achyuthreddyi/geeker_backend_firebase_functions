@@ -13,13 +13,60 @@ const firebaseConfig = {
   messagingSenderId: '288453501250',
   appId: '1:288453501250:web:5451d42a5b733faa99e8db'
 }
+const isEmpty = string => {
+  if (string.trim() === '') return true
+  else return false
+}
+const isEmail = email => {
+  const regEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  if (email.match(regEx)) return true
+  else return false
+}
+
+const FBAuth = (req, res, next) => {
+  let idToken
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer ')
+  ) {
+    idToken = req.headers.authorization.split(' ')[1]
+  } else {
+    console.error('no token found')
+    return res.status(403).json({ error: 'UnAuthorized' })
+  }
+
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then(decodedToken => {
+      req.user = decodedToken
+      console.log('decoded Token', decodedToken)
+      console.log(
+        'getting data from the database',
+        db.collection('users').where('userId', '==', req.user.uid)
+      )
+      return db
+        .collection('users')
+        .where('userId', '==', req.user.uid)
+        .limit(1)
+        .get()
+    })
+    .then(data => {
+      req.user.handle = data.docs[0].data().handle
+      return next()
+    })
+    .catch(err => {
+      console.error('error loading the token', err)
+      return res.status(403).json(err)
+    })
+}
 
 const firebase = require('firebase')
 firebase.initializeApp(firebaseConfig)
 
 const db = admin.firestore()
 
-app.get('/geeks', (request, response) => {
+app.get('/geeks', (req, res) => {
   db.collection('geek')
     .orderBy('createdAt', 'desc')
     .get()
@@ -32,35 +79,31 @@ app.get('/geeks', (request, response) => {
           ...doc.data()
         })
       })
-      return response.json(geeks)
+      return res.json(geeks)
     })
-    .catch(err => console.error(err))
+    .catch(err => {
+      console.error('error while verifying the token', err)
+      return res.status(403).json(err)
+    })
 })
 
-const isEmpty = string => {
-  if (string.trim() === '') return true
-  else return false
-}
-const isEmail = email => {
-  const regEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-  if (email.match(regEx)) return true
-  else return false
-}
-
-app.post('/geeks', (request, response) => {
+app.post('/geeks', FBAuth, (req, res) => {
+  if (req.body.body.trim() === '') {
+    return res.status(400).json({ body: 'body should not be empty' })
+  }
   const newGeek = {
-    body: request.body.body,
-    userHandle: request.body.userHandle,
+    body: req.body.body,
+    userHandle: req.user.handle,
     createdAt: new Date().toISOString()
   }
 
   db.collection('geek')
     .add(newGeek)
     .then(doc => {
-      response.json({ message: `document ${doc.id} created succcessfully!!` })
+      res.json({ message: `document ${doc.id} created succcessfully!!` })
     })
     .catch(err => {
-      response.status(500).json({ error: 'something went wrong' })
+      res.status(500).json({ error: 'something went wrong' })
       console.log(err)
     })
 })
