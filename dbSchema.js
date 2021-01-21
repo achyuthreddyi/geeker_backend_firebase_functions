@@ -1,4 +1,5 @@
 export const db = {
+  users: [],
   geeks: [
     {
       userHandle: 'user',
@@ -8,4 +9,10 @@ export const db = {
       connentCount: 7
     }
   ]
+}
+
+//  userDetails in the redux store
+export const userDetails = {
+  credentials: {},
+  likes: [{}, {}]
 }

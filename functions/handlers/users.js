@@ -1,6 +1,10 @@
 const config = require('../utils/config')
 const { db, admin } = require('../utils/admin')
-const { validateSignUpData, validateLoginData } = require('../utils/validators')
+const {
+  validateSignUpData,
+  validateLoginData,
+  reduceUserDetails
+} = require('../utils/validators')
 const BusBoy = require('busboy')
 const path = require('path')
 const os = require('os')
@@ -30,7 +34,6 @@ exports.signUp = (req, res) => {
     .get()
     .then(doc => {
       if (doc.exists) {
-        console.log('coming inside the if block ')
         return res.status(400).json({ handle: 'this handle is already taken ' })
       } else {
         return firebase
@@ -104,9 +107,10 @@ exports.uploadImage = (req, res) => {
     ) {
       return res.status(400).json({ error: 'Wrong file type submitter' })
     }
-    const imageExtension = fieldname.split('.')[fieldname.split('.').length - 1]
+    const imageExtension = fieldname.split('.').pop()
     const imageFileName = `${uuidv4()}.${imageExtension}`
     const filepath = path.join(os.tmpdir(), imageFileName)
+    console.log('os temporary directory', os.tmpdir())
     imageTobeUploaded = { filepath, mimetype, imageFileName }
     file.pipe(fs.createWriteStream(filepath))
   })
@@ -137,4 +141,45 @@ exports.uploadImage = (req, res) => {
       })
   })
   busybox.end(req.rawBody)
+}
+
+// add user details
+exports.addUserDetails = (req, res) => {
+  const userDetails = reduceUserDetails(req.body)
+  db.doc(`/users/${req.user.handle}`)
+    .update(userDetails)
+    .then(() => {
+      return res.json({ message: 'details added successfully' })
+    })
+    .catch(err => {
+      console.error(err)
+      res.status(500).json({ error: err.code })
+    })
+}
+
+// get user details
+exports.getUserDetails = (req, res) => {
+  const userDetails = {}
+  db.doc(`/users/${req.user.handle}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        userDetails.credentials = doc.data()
+        return db
+          .collection('likes')
+          .where('userHandle', '==', req.user.handle)
+          .get()
+      }
+    })
+    .then(data => {
+      userDetails.likes = []
+      data.forEach(doc => {
+        userDetails.likes.push(doc.data())
+      })
+      return res.json(userDetails)
+    })
+    .catch(err => {
+      console.error(err)
+      res.status(500).json({ error: err })
+    })
 }
