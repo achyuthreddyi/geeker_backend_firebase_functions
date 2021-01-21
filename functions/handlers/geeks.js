@@ -28,13 +28,22 @@ exports.createOneGeek = (req, res) => {
   const newGeek = {
     body: req.body.body,
     userHandle: req.user.handle,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    userImage: req.user.imageUrl,
+    likeCount: 0,
+    commentCount: 0,
+    unlikeCount: 0
   }
 
   db.collection('geek')
     .add(newGeek)
     .then(doc => {
-      res.json({ message: `document ${doc.id} created succcessfully!!` })
+      const resGeek = newGeek
+      resGeek.geekId = doc.id
+      res.json({
+        message: `document ${doc.id} created succcessfully!!`,
+        newGeek: resGeek
+      })
     })
     .catch(err => {
       res.status(500).json({ error: 'something went wrong' })
@@ -104,4 +113,59 @@ exports.commentOnGeek = (req, res) => {
       res.status(500).json({ error: 'something went wrong' })
     })
 }
-// exports.
+exports.likeGeekById = (req, res) => {
+  const newLike = {
+    geekId: req.params.geekId,
+    userHandle: req.user.handle,
+    createdAt: new Date().toISOString()
+  }
+  db.doc(`/geek/${req.params.geekId}`)
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        return res.status(400).json({ error: 'this geek does not exists' })
+      } else {
+        return db.collection('likes').add(newLike)
+      }
+    })
+    .then(doc => {
+      res.json({
+        message: `liked the ${newLike.geekId} by ${newLike.userHandle}`
+      })
+    })
+    .catch(err => {
+      console.error(err)
+      res
+        .status(500)
+        .json({ error: 'something went wrong while liking the video' })
+    })
+}
+exports.unlikeGeekById = (req, res) => {
+  const newUnLike = {
+    geekId: req.params.geekId,
+    userHandle: req.user.handle,
+    createdAt: new Date().toISOString()
+  }
+  db.doc(`/geek/${req.params.geekId}`)
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        return res.status(400).json({ error: 'this geek does not exists' })
+      } else {
+        return db.collection('unlikes').add(newUnLike)
+      }
+    })
+    .then(doc => {
+      res.json({
+        message: `unliked the ${newUnLike.geekId} by ${newUnLike.userHandle}`
+      })
+    })
+    .catch(err => {
+      console.error(err)
+      res
+        .status(500)
+        .json({ error: 'something went wrong while liking the video' })
+    })
+}
+
+// exports.unlikeGeekById = (req, res) => {}

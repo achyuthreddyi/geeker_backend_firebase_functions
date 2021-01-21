@@ -4,7 +4,9 @@ const {
   createOneGeek,
   getGeekById,
   deleteGeekById,
-  commentOnGeek
+  commentOnGeek,
+  likeGeekById,
+  unlikeGeekById
 } = require('./handlers/geeks')
 const {
   signUp,
@@ -27,13 +29,15 @@ app.get('/user/', FBAuth, getUserDetails)
 // geeks routes
 
 app.get('/geeks', getAllGeeks)
-app.post('/geek', FBAuth, createOneGeek)
+app.post('/geeks', FBAuth, createOneGeek)
 // RD operations on the geeks
 app.get('/geek/:geekId', getGeekById)
 app.delete('/geek/:geekId', deleteGeekById)
-// Like and unlike the geeks
-app.get('/geek/:geekId', getGeekById)
 // comment on a geek
 app.post('/geek/:geekId/comment', FBAuth, commentOnGeek)
+
+// Like and unlike the geeks
+app.get('/geek/:geekId/like', FBAuth, likeGeekById)
+app.get('/geek/:geekId/unlike', FBAuth, unlikeGeekById)
 
 exports.api = functions.https.onRequest(app)

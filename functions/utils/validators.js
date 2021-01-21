@@ -1,7 +1,7 @@
-const {
-  exampleObjectMetadata
-} = require('firebase-functions-test/lib/providers/storage')
-const { user } = require('firebase-functions/lib/providers/auth')
+// const {
+//   exampleObjectMetadata
+// } = require('firebase-functions-test/lib/providers/storage')
+// const { user } = require('firebase-functions/lib/providers/auth')
 
 const isEmpty = string => {
   if (string.trim() === '') return true
