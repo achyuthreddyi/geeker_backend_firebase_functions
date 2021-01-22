@@ -12,6 +12,7 @@ const fs = require('fs')
 const { v4: uuidv4 } = require('uuid')
 
 const firebase = require('firebase')
+// const { notifications } = require('../../dbSchema')
 firebase.initializeApp(config)
 
 exports.signUp = (req, res) => {
@@ -157,8 +158,8 @@ exports.addUserDetails = (req, res) => {
     })
 }
 
-// get user details
-exports.getUserDetails = (req, res) => {
+// get current user details
+exports.getMyDetails = (req, res) => {
   const userDetails = {}
   db.doc(`/users/${req.user.handle}`)
     .get()
@@ -176,10 +177,87 @@ exports.getUserDetails = (req, res) => {
       data.forEach(doc => {
         userDetails.likes.push(doc.data())
       })
+
+      return db
+        .collection('notifications')
+        .where('recipient', '==', req.user.handle)
+        .orderBy('createdAt', 'desc')
+        .limit(0)
+        .get()
+      // return res.json(userDetails)
+    })
+    .then(data => {
+      userDetails.notifications = []
+      data.forEach(doc => {
+        userDetails.notifications.push({
+          recipient: doc.data().recipient,
+          sender: doc.data().sender,
+          createdAt: doc.data().createdAt,
+          geekId: doc.data().geekId,
+          type: doc.data().type,
+          read: doc.data().read,
+          notificationId: doc.id
+        })
+      })
       return res.json(userDetails)
     })
     .catch(err => {
       console.error(err)
       res.status(500).json({ error: err })
+    })
+}
+
+exports.getUserDetailsByHandle = (req, res) => {
+  const userData = {}
+  db.doc(`/users/${req.params.handle}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        userData.user = doc.data()
+        return db
+          .collection('geeks')
+          .where('userHandle', '==', req.params.handle)
+          .orderBy('createdAt', 'desc')
+          .get()
+      } else {
+        return res.status(404).json({ error: 'User not found' })
+      }
+    })
+    .then(data => {
+      userData.geeks = []
+      data.forEach(doc => {
+        userData.geeks.push({
+          body: doc.data().body,
+          createdAt: doc.data().createdAt,
+          userHandle: doc.data().userHandle,
+          userImage: doc.data().userImage,
+          likeCount: doc.data().likeCount,
+          dislikeCount: doc.data().dislikeCount,
+          commentCount: doc.data().commentCount,
+          geekId: doc.id
+        })
+      })
+      return res.json(userData)
+    })
+    .catch(err => {
+      console.error(err)
+      return res.status(500).json({ error: err })
+    })
+}
+
+exports.markNotificationsRead = (req, res) => {
+  const batch = db.batch()
+  req.body.forEach(notificationId => {
+    const notification = db.doc(`/notifications/${notificationId}`)
+    batch.update(notification, { read: true })
+  })
+  batch
+    .commit()
+    .then(() => {
+      return res.json({ message: 'Notifications marked red' })
+    })
+    .catch(err => {
+      console.error(err)
+      return res.status(500).json({ error: err.code })
     })
 }
