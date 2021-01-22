@@ -6,7 +6,8 @@ const {
   deleteGeekById,
   commentOnGeek,
   likeGeekById,
-  unlikeGeekById
+  unlikeGeekById,
+  disLikeGeekById
 } = require('./handlers/geeks')
 const {
   signUp,
@@ -38,6 +39,6 @@ app.post('/geek/:geekId/comment', FBAuth, commentOnGeek)
 
 // Like and unlike the geeks
 app.get('/geek/:geekId/like', FBAuth, likeGeekById)
-app.get('/geek/:geekId/unlike', FBAuth, unlikeGeekById)
+app.get('/geek/:geekId/dislike', FBAuth, disLikeGeekById)
 
 exports.api = functions.https.onRequest(app)
