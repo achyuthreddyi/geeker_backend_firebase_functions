@@ -1,4 +1,4 @@
-// const { error } = require('firebase-functions/lib/logger')
+// const { error } = require('fireba++se-functions/lib/logger')
 const { db } = require('../utils/admin')
 
 exports.getAllGeeks = (req, res) => {
